@@ -1,25 +1,72 @@
-# SigmaOS Panel
+# SigmaOS-panel
 
-Python command-line tool for maintaining a panel layout. It lists a fixed
-registry of applet identifiers, adds or removes identifiers from a JSON layout,
-and renders a deterministic text plan with `start` and `end` packing.
+SigmaOS critical system component inspired by Arch Linux and Debian architecture.
 
-## Commands and data
+## Overview
 
-- `sigma-panel applets` lists registered applets and layout membership.
-- `sigma-panel add ID --pack start|end` and `remove ID` update the layout.
-- `sigma-panel layout-plan` prints the current text layout.
-- The default store is `~/.config/sigma-panel/layout.json`; `--store PATH`
-  selects another file.
+This component provides essential functionality for the SigmaOS operating system,
+following the modular design principles of Arch Linux and the stability focus of Debian.
 
-The write commands modify only this layout file. They do not install applets,
-launch indicators, create a taskbar window, or connect to a desktop session.
-Unknown and duplicate applets and malformed stored entries fail with an error.
+## Features
 
-## Development
+- Asynchronous I/O with Tokio
+- Comprehensive error handling with anyhow
+- Structured logging
+- Configuration management
+- Status monitoring
+- CLI interface with clap
 
-`make build` compiles the Python sources. `make test` runs the unittest suite.
-The temporary self-test uses a temporary directory for persistence checks.
-This component is inspired by the modular applet model of
-[Xfce Panel](https://github.com/linuxmint/xfce-panel); it does not implement
-Xfce plugins or a graphical panel backend.
+## Installation
+
+```bash
+cargo build --release
+cargo install --path .
+```
+
+## Usage
+
+```bash
+# Initialize the component
+panel init
+
+# Start the component
+panel start
+
+# Stop the component
+panel stop
+
+# Check status
+panel status
+
+# Run the component
+panel run
+```
+
+## Configuration
+
+The component can be configured via environment variables or configuration files.
+
+## Building
+
+```bash
+cargo build --release
+```
+
+## Testing
+
+```bash
+cargo test
+```
+
+## License
+
+MIT License - See LICENSE file for details.
+
+## Contributing
+
+See CONTRIBUTING.md for guidelines.
+
+## Links
+
+- Repository: https://github.com/AaryanSinghChauhan09/SigmaOS-panel
+- SigmaOS: https://github.com/AaryanSinghChauhan09
