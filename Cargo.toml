@@ -1,10 +1,14 @@
 [package]
-name = "sigmaos-desktop-component"
+name = "sigmaos-panel"
 version = "0.1.0"
 edition = "2021"
 authors = ["SigmaOS Team"]
 license = "MIT OR Apache-2.0"
-description = "SigmaOS desktop component with sophisticated implementation"
+description = "SigmaOS panel - Desktop panel/taskbar with app launcher and system tray"
+
+[[bin]]
+name = "sigmaos-panel"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"

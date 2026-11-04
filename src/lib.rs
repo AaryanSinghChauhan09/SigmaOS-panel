@@ -1,141 +1,29 @@
-//! SigmaOS-panel - SigmaOS Component
-//!
-//! Critical system infrastructure component for SigmaOS,
-//! inspired by Arch Linux and Debian architecture.
-
-use anyhow::Result;
-use log::{info, error};
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-
-/// Component configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub enabled: bool,
-    pub debug: bool,
-    pub log_level: String,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            debug: false,
-            log_level: "info".to_string(),
-        }
-    }
-}
-
-/// Component main trait
+pub mod config;
+pub mod error;
+pub mod panel_items;
+pub mod service;
+pub use config::Config;
+pub use error::{ComponentError, Result};
+pub use panel_items::{Panel, PanelItem, PanelItemType, PanelPosition};
+pub use service::{Service, ServiceStatus};
 pub trait Component {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
-    fn initialize(&mut self) -> Result<()>;
-    fn start(&mut self) -> Result<()>;
-    fn stop(&mut self) -> Result<()>;
-    fn status(&self) -> ComponentStatus;
+    fn initialize(&mut self) -> error::Result<()>;
+    fn shutdown(&mut self) -> error::Result<()>;
+    fn health_check(&self) -> error::Result<()>;
 }
-
-/// Component status
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ComponentStatus {
-    Running,
-    Stopped,
-    Error(String),
-    Initializing,
+pub struct PanelComponent { service: service::Service }
+impl PanelComponent {
+    pub fn new(config: Config) -> Self { Self { service: service::Service::new(config) } }
 }
-
-/// Main component implementation
-pub struct panel {
-    config: Config,
-    status: ComponentStatus,
-}
-
-impl panel {
-    pub fn new(config: Config) -> Self {
-        Self {
-            config,
-            status: ComponentStatus::Stopped,
-        }
-    }
-
-    pub fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let config: Config = serde_json::from_str(&content)?;
-        Ok(Self::new(config))
-    }
-}
-
-impl Component for panel {
-    fn name(&self) -> &str {
-        "SigmaOS-panel"
-    }
-
-    fn version(&self) -> &str {
-        "0.1.0"
-    }
-
-    fn initialize(&mut self) -> Result<()> {
-        info!("Initializing SigmaOS-panel");
-        self.status = ComponentStatus::Initializing;
-        
-        // Initialize logging
-        if self.config.debug {
-            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
-                .init();
-        } else {
-            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(&self.config.log_level))
-                .init();
-        }
-        
-        info!("Component configuration: {:?}", self.config);
-        self.status = ComponentStatus::Stopped;
-        Ok(())
-    }
-
-    fn start(&mut self) -> Result<()> {
-        info!("Starting SigmaOS-panel");
-        self.status = ComponentStatus::Running;
-        Ok(())
-    }
-
-    fn stop(&mut self) -> Result<()> {
-        info!("Stopping SigmaOS-panel");
-        self.status = ComponentStatus::Stopped;
-        Ok(())
-    }
-
-    fn status(&self) -> ComponentStatus {
-        self.status.clone()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_component_creation() {
-        let config = Config::default();
-        let component = panel::new(config);
-        assert_eq!(component.name(), "SigmaOS-panel");
-        assert_eq!(component.version(), "0.1.0");
-    }
-
-    #[test]
-    fn test_initialization() {
-        let mut component = panel::new(Config::default());
-        component.initialize().unwrap();
-        assert!(matches!(component.status(), ComponentStatus::Stopped));
-    }
-
-    #[test]
-    fn test_start_stop() {
-        let mut component = panel::new(Config::default());
-        component.initialize().unwrap();
-        component.start().unwrap();
-        assert!(matches!(component.status(), ComponentStatus::Running));
-        component.stop().unwrap();
-        assert!(matches!(component.status(), ComponentStatus::Stopped));
+impl Component for PanelComponent {
+    fn name(&self) -> &str { "sigmaos-panel" }
+    fn version(&self) -> &str { env!("CARGO_PKG_VERSION") }
+    fn initialize(&mut self) -> error::Result<()> { self.service.start() }
+    fn shutdown(&mut self) -> error::Result<()> { self.service.stop() }
+    fn health_check(&self) -> error::Result<()> {
+        if self.service.is_running() { Ok(()) }
+        else { Err(error::ComponentError::Service("panel not running".to_string())) }
     }
 }

@@ -1,0 +1,8 @@
+[component]
+name = "SigmaOS-panel"
+version = "0.1.0"
+maturity = "alpha"
+tier = 5
+owner = "SigmaOS Team"
+purpose = "Desktop panel/taskbar with app launcher, system tray, and workspace indicator"
+dependencies = ["SigmaOS-desktop"]
