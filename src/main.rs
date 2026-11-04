@@ -1,107 +1,47 @@
-use std::env;
-//! SigmaOS-panel - SigmaOS Component CLI
-//!
-//! Command-line interface for SigmaOS-panel component.
+mod config;
+mod error;
+mod service;
+mod window;
+mod file;
+mod theme;
 
+use config::Config;
+use service::Service;
+use window::{WindowManager, Rect};
+use file::FileManager;
+use theme::{ThemeManager, Theme, ColorPalette, Color};
 use anyhow::Result;
-use clap::{Parser, Subcommand};
-use log::info;
-use panel::{Component, ComponentStatus, Config, panel};
 
-#[derive(Parser)]
-#[command(name = "panel")]
-#[command(about = "SigmaOS SigmaOS-panel component", long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Initialize the component
-    Init {
-        /// Enable debug mode
-        #[arg(short, long)]
-        debug: bool,
-    },
-    /// Start the component
-    Start,
-    /// Stop the component
-    Stop,
-    /// Get component status
-    Status,
-    /// Run the component
-    Run {
-        /// Enable debug mode
-        #[arg(short, long)]
-        debug: bool,
-    },
-}
-
-fn main() -> Result<()> { -> Result<()> {
-    let cli = Cli::parse();
+fn main() -> Result<()> {
+    env_logger::init();
     
     let config = Config::default();
-    let mut component = panel::new(config);
-
-    match cli.command {
-        Commands::Init { debug } => {
-            if debug {
-                println!("Initializing SigmaOS-panel in debug mode...");
-            } else {
-                println!("Initializing SigmaOS-panel...");
-            }
-            component.initialize()?;
-            println!("SigmaOS-panel initialized successfully");
-        }
-        Commands::Start => {
-            component.initialize()?;
-            component.start()?;
-            println!("SigmaOS-panel started successfully");
-        }
-        Commands::Stop => {
-            component.stop()?;
-            println!("SigmaOS-panel stopped successfully");
-        }
-        Commands::Status => {
-            let status = component.status();
-            println!("SigmaOS-panel status: {:?}", status);
-        }
-        Commands::Run { debug } => {
-            if debug {
-                println!("Running SigmaOS-panel in debug mode...");
-            } else {
-                println!("Running SigmaOS-panel...");
-            }
-            component.initialize()?;
-            component.start()?;
-            println!("SigmaOS-panel is running. Press Ctrl+C to stop.");
-            
-            // Keep running
-            tokio::runtime::Runtime::new()?.block_on(async {
-                tokio::signal::ctrl_c().await.unwrap();
-                info!("Received Ctrl+C, shutting down...");
-            });
-            
-            component.stop()?;
-            println!("SigmaOS-panel stopped");
-        }
-    }
-
+    let mut service = Service::new(config);
+    
+    service.start()?;
+    println!("Service started successfully");
+    
+    // Demonstrate window management
+    let mut wm = WindowManager::new();
+    let rect = Rect::new(100, 100, 800, 600);
+    let window_id = wm.create_window("Test Window".to_string(), rect);
+    wm.focus_window(window_id)?;
+    println!("Window created and focused: {}", window_id);
+    
+    // Demonstrate file management
+    let fm = FileManager::default();
+    let files = fm.list_directory()?;
+    println!("Directory listing: {} files", files.len());
+    
+    // Demonstrate theme management
+    let mut tm = ThemeManager::new();
+    let theme = Theme::new("SigmaOS Default".to_string());
+    tm.add_theme(theme);
+    tm.set_current_theme("SigmaOS Default")?;
+    println!("Theme set successfully");
+    
+    service.stop()?;
+    println!("Service stopped successfully");
+    
     Ok(())
-}
-
-#[derive(Debug, Clone)]
-struct Config {
-    verbose: bool,
-    dry_run: bool,
-}
-
-impl Config {
-    fn from_env() -> Self {
-        Config {
-            verbose: env::var("VERBOSE").is_ok(),
-            dry_run: env::var("DRY_RUN").is_ok(),
-        }
-    }
 }
