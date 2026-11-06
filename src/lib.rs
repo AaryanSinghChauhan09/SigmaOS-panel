@@ -27,3 +27,6 @@ impl Component for PanelComponent {
         else { Err(error::ComponentError::Service("panel not running".to_string())) }
     }
 }
+pub mod theme;
+pub mod window;
+pub mod file;
